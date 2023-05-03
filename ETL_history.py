@@ -12,6 +12,9 @@ from requests import Request
 import os
 import warnings
 
+################################################
+# Modify the following lines
+
 # Desired path to save final file
 path_export = 'Data/test'
 
@@ -19,10 +22,22 @@ path_export = 'Data/test'
 # it has to be in unix timestamp. Use the online converter to convert a specific 
 # date: https://www.unixtimestamp.com/
 
+
 lower_bound = 1665586800
-upper_bound = 1665586800+3600
+upper_bound = 1665586800+5000
+
+#API KEYS -> you need an API key on https://optimistic.etherscan.io/
+# store it in a txt file and specify in filename the path
+filename = 'api.txt'
 
 
+#####################################################
+# From here do not modify 
+
+with open(filename, 'r') as f:
+    myAPIkey = f.read().strip()
+ 
+ # Create directory
 if not os.path.exists(path_export):
     os.makedirs(path_export)
 
@@ -31,7 +46,6 @@ if not os.path.exists(path_export):
 # Market constants
 #################
 perpetualFuturesID = "0xf86048DFf23cF130107dfB4e6386f574231a5C65"
-myAPIkey = "YJJ24VBS3BVWC3MT6DZX2Q7SWFE3UM4R8X"
 marketID = '0xaE55F163337A2A46733AA66dA9F35299f9A46e9e'
 market_key = '0x7345544800000000000000000000000000000000000000000000000000000000'
 
@@ -59,14 +73,15 @@ FUTETH_ABI = json.loads(json.load(f)["result"])
     #-----------------------------------------
 
 starting_block = requests.get("https://api-optimistic.etherscan.io/api?module=block"+ '&address='+ \
-    perpetualFuturesID +"&action=getblocknobytime&timestamp="+ str(lower_bound) + "&closest=before").json()['result']
+    perpetualFuturesID +"&action=getblocknobytime&timestamp="+ str(lower_bound) + "&closest=before"+ '&apikey='+myAPIkey).json()['result']
 lastBlock = requests.get("https://api-optimistic.etherscan.io/api?module=block"+ '&address='+ \
-    perpetualFuturesID +"&action=getblocknobytime&timestamp="+ str(upper_bound) + "&closest=before").json()['result']
+    perpetualFuturesID +"&action=getblocknobytime&timestamp="+ str(upper_bound) + "&closest=before"+ '&apikey='+myAPIkey).json()['result']
+
 
 response = requests.get(
-    'https://api-optimistic.etherscan.io/api?'+
-    'module=account&action=txlist'+ '&address='+ perpetualFuturesID +
-    '&startblock='+str(starting_block)+'&endblock='+str(lastBlock)+'&sort=asc')
+    'https://api-optimistic.etherscan.io/api?'+ \
+    'module=account&action=txlist'+ '&address='+ perpetualFuturesID + \
+    '&startblock='+str(starting_block)+'&endblock='+str(lastBlock)+'&sort=asc'+ '&apikey='+myAPIkey)
 
 transactions = pd.DataFrame.from_dict(response.json()['result'])[['timeStamp','from',\
                                         'functionName','input','to', 'isError','hash','blockNumber']]
