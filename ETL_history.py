@@ -72,6 +72,7 @@ FUTETH_ABI = json.loads(json.load(f)["result"])
     # Kwenta transactions (events on the contract)
     #-----------------------------------------
 
+print('Querying Kwenta transactions for the desired interval...')
 starting_block = requests.get("https://api-optimistic.etherscan.io/api?module=block"+ '&address='+ \
     perpetualFuturesID +"&action=getblocknobytime&timestamp="+ str(lower_bound) + "&closest=before"+ '&apikey='+myAPIkey).json()['result']
 lastBlock = requests.get("https://api-optimistic.etherscan.io/api?module=block"+ '&address='+ \
@@ -106,7 +107,9 @@ transactions = transactions[transactions['isError'] == '0']
     # Fix strings
 transactions['input'] = transactions['input'].apply(str)
 transactions['functionName'] = transactions['functionName'].apply(str)
+print("Query successful!")
 
+print("Decoding transactions...")
     # Decoding input from bytes32 with contract ABI specs
 def decode_input(X, N):
     if 'sizeDelta' in N:
@@ -126,6 +129,8 @@ transactions['functionName'] = transactions['functionName'].apply(lambda x: x.sp
     #-----------------------------------------
     # Retrieve market stats
     #-----------------------------------------
+
+print("Getting market features...")
 c = w3.eth.contract(address=perpetualFuturesID, abi=FUTETH_ABI)
 
  #-----------------------------------------
@@ -170,7 +175,7 @@ try:
 
         fund_rate_series = pd.concat([fund_rate_series, pd.DataFrame.from_dict(r.json()['data']['fundingRateUpdates'])[['timestamp','funding','sequenceLength']]])
 except: 
-    print('no other data')
+    print("-Funding rate: complete")
 
 fund_rate_series = fund_rate_series[fund_rate_series['timestamp'] <= str(upper_bound)]
 
@@ -178,7 +183,6 @@ fund_rate_series['dateHuman'] = fund_rate_series['timestamp'].apply(lambda x: da
 fund_rate_series['funding'] = fund_rate_series['funding'].apply(lambda x: int(x)/10**18)
 
 fund_rate_series = fund_rate_series.sort_values(by='timestamp',ascending= True)
-
 
     # Prices and all events
 ETHPERP_prices = pd.DataFrame(columns = ('DateHuman','dateUnix','price'))
@@ -296,7 +300,7 @@ for i in range(0, len(needed_timepoints)):
         newdata = pd.DataFrame({"DateHuman":[T],"price":[assetPrice], 'dateUnix':[dateUnix]})
         ETHPERP_prices = pd.concat([ETHPERP_prices, newdata])
     
- except: print('Index not working: '+str(i) +'. Event: '+ needed_timepoints['functionName'].iloc[i])
+ except: print('-Index not working: '+str(i) +'. Event: '+ needed_timepoints['functionName'].iloc[i])
 
      # Select latest price available per second
 V = ETHPERP_prices.groupby(['DateHuman','dateUnix'])['price'].cumcount() + 1
@@ -321,7 +325,7 @@ for i in range(0, len(ETHPERP_prices)-1):
 missingPrice['DateHuman'] = missingPrice['dateUnix'].apply(lambda x: datetime.datetime.utcfromtimestamp(int(x)+7200).strftime("%Y-%m-%d %H:%M:%S"))
 
 ETHPERP_prices = pd.concat([ETHPERP_prices, missingPrice]).sort_values('dateUnix').drop_duplicates().reset_index(drop = True)
-
+print("-Prices: complete")
 
     # Get list of all Events 
 S = pd.merge(I, fund_rate_series, left_on = 'fundingIndex', right_on = 'sequenceLength', how ='inner')[['size','tradeSize','timestamp']]
@@ -329,7 +333,7 @@ S['DateHuman'] = S['timestamp'].apply(lambda x: datetime.datetime.utcfromtimesta
 S = S.sort_values('timestamp').reset_index(drop = True)
 
     # Get data about the positions under analysis
-
+print("Getting trade results...")
 subgraph = "https://api.thegraph.com/subgraphs/name/kwenta/optimism-main"
 positions = transactions[['from','unixtime','input','hash']].drop_duplicates()
 
@@ -435,7 +439,7 @@ positions_metrics['closeTimestampH'] = positions_metrics['closeTimestampH'].appl
 
 
  # Retrieve the initial skew
-
+print("Getting initial attributes...")
 if fund_rate_series['timestamp'].iloc[1] != fund_rate_series['timestamp'].iloc[0]:
     i = 0
 else:
@@ -477,7 +481,7 @@ marketData = pd.DataFrame({"DateHuman":[T],'dateUnix':[t],'skew':[marketSkew], \
  #-----------------------------------------
  # Preparing data for Vadalog and export
  #-----------------------------------------
-
+print("Exporting data...")
 if not os.path.exists(path_export+'/vadalog_input'):
     os.makedirs(path_export+'/vadalog_input')
 
@@ -553,3 +557,4 @@ with pd.ExcelWriter(path_export+'/kwentaData.xlsx', engine="openpyxl") as writer
     fund_rate_series.to_excel(writer, sheet_name='fundRateSeries', index = False)
     positions_metrics.to_excel(writer, sheet_name='benchmarkOutput', index = False)
 
+print("Download complete!")
