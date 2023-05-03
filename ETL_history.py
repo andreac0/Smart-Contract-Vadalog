@@ -13,14 +13,14 @@ import os
 import warnings
 
 # Desired path to save final file
-path_export = 'Data/12OttH'
+path_export = 'Data/test'
 
 # Input the lower and upper bound of the desired interval of analysis
 # it has to be in unix timestamp. Use the online converter to convert a specific 
 # date: https://www.unixtimestamp.com/
 
 lower_bound = 1665586800
-upper_bound = 1665586800+3600*2
+upper_bound = 1665586800+3600
 
 
 if not os.path.exists(path_export):
