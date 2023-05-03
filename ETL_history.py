@@ -199,7 +199,7 @@ module=logs&action=getLogs\
 &toBlock="+str(firstblock)+"\
 &address=0xf86048dff23cf130107dfb4e6386f574231a5c65\
 &topic0=0x930fd93131df035ac630ef616ad4212af6370377bf327e905c2724cd01d95097\
-&apikey=YJJ24VBS3BVWC3MT6DZX2Q7SWFE3UM4R8X"
+&apikey="+myAPIkey
 
 logs = pd.DataFrame.from_dict(requests.get(payload).json()['result'])
 
@@ -210,7 +210,7 @@ module=logs&action=getLogs\
 &toBlock="+str(firstblock+n)+"\
 &address=0xf86048dff23cf130107dfb4e6386f574231a5c65\
 &topic0=0x930fd93131df035ac630ef616ad4212af6370377bf327e905c2724cd01d95097\
-&apikey=YJJ24VBS3BVWC3MT6DZX2Q7SWFE3UM4R8X"
+&apikey="+myAPIkey
     newL = pd.DataFrame.from_dict(requests.get(payload).json()['result'])
     logs = pd.concat([logs,newL])
     firstblock = firstblock+n
